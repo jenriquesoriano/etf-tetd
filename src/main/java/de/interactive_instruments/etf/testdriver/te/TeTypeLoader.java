@@ -89,6 +89,10 @@ class TeTypeLoader implements EtsTypeLoader {
 			+ "<a target=\"_blank\" href=\"https://cite.opengeospatial.org/forum\">OGC Compliance Forum</a>.";
 
 	public static final TranslationTemplateBundleDto TE_TRANSLATION_TEMPLATE_BUNDLE = createTranslationTemplateBundle();
+	
+	//Hotfix for using OGC API TEAM engine endpoint
+	private static final String TEAM_WFS_VERSION = "1.34";
+	
 	private boolean initialized = false;
 	private final EidHolderMap<ExecutableTestSuiteDto> propagatedDtos = new DefaultEidHolderMap<>();
 	private ExecutableTestSuiteLifeCycleListener mediator;
@@ -277,7 +281,7 @@ class TeTypeLoader implements EtsTypeLoader {
 				// The ETS ID is generated from the URL without the version
 				final String etsUrlWithoutVersion = UriUtils.getParent(etsUrlStr);
 				ets.setId(EidFactory.getDefault().createUUID(etsUrlWithoutVersion));
-				ets.setVersionFromStr(UriUtils.lastSegment(etsUrlStr));
+				ets.setVersionFromStr(TEAM_WFS_VERSION);
 				// Check if an ETS already exists and if the version matches
 				boolean create = true;
 				if (etsDao.exists(ets.getId())) {
