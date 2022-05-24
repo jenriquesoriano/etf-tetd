@@ -5,21 +5,24 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 
 buildscript {
-	repositories {
-		maven {
-			url "https://services.interactive-instruments.de/etfdev-af/plugins-releases-local"
-			credentials {
-				// Our repository requires authenticating
-				username 'ii-bda'
-				password 'AP7mb4WA6F1ckdZkaE8Qx8GSowt'
-			}}
-	}
-	dependencies {
-		classpath group: 'de.interactive_instruments.bda', name: 'etf-bda', version: '[1.0.29,1.0.99]'
-	}
-	dependencies {
-		ant.unjar src: configurations.classpath.files.find {it.path.contains('etf')}, dest: 'build/gradle'
-	}
+    repositories {
+        maven {
+            url "https://af.etf.interactive-instruments.de/repository/gradle-plugins"
+            credentials {
+                username 'ii-bda'
+                password 'AP7mb4WA6F1ckdZkaE8Qx8GSowt'
+            }}
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        mavenCentral()
+    }
+    dependencies {
+		classpath group: 'de.interactive_instruments.bda', name: 'etf-bda', version: '[2.0.17,2.0.99]'
+    }
+    dependencies {
+        ant.unjar src: configurations.classpath.files.find {it.path.contains('etf')}, dest: 'build/gradle'
+    }
 }
 apply from: 'build/gradle/ii-bda.gradle'
 
@@ -49,19 +52,19 @@ configurations {
 }
 
 dependencies {
-	compileOnly group: 'de.interactive_instruments', name: 'ii-commons-util', version:'3.0.0'+project.snapshotSuffix
-	compileOnly group: 'de.interactive_instruments.etf', name: 'etf-core', version:'1.1.0'+project.snapshotSuffix
-	compileOnly group: 'de.interactive_instruments.etf', name: 'etf-spi', version:'1.0.1'+project.snapshotSuffix
+	compileOnly group: 'de.interactive_instruments', name: 'ii-commons-util', version: '4.0.0' + project.snapshotSuffix
+    compileOnly group: 'de.interactive_instruments.etf', name: 'etf-core', version:'2.1.0'+project.snapshotSuffix
+    compileOnly group: 'de.interactive_instruments.etf', name: 'etf-spi', version:'2.1.0'+project.snapshotSuffix
 	api group: 'org.slf4j', name: 'slf4j-api', version: etf_slf4jApiVersion
 
 	// https://mvnrepository.com/artifact/org.jsoup/jsoup
 	compile group: 'org.jsoup', name: 'jsoup', version: '1.10.2'
 
-	integrationTest group: 'ch.qos.logback', name: 'logback-classic', version: etf_logbackVersion
-	integrationTest group: 'junit', name: 'junit', version: etf_junitTestVersion
-	integrationTest group: 'de.interactive_instruments.etf', name: 'etf-spi', version:'1.0.1'+project.snapshotSuffix
+	integrationTest group: 'org.slf4j', name: 'slf4j-simple', version: etf_slf4jApiVersion
+	integrationTest group: 'de.interactive_instruments.etf', name: 'etf-spi', version:'2.1.0'+project.snapshotSuffix
 	integrationTest group: 'de.interactive_instruments.etf', name: 'etf-stdtot', version: '1.0.1' + project.snapshotSuffix
 	integrationTest group: 'de.interactive_instruments.etf.test', name: 'etf-unittest', version: '1.1.1' + project.snapshotSuffix
+	integrationTest group: 'org.junit.jupiter', name: 'junit-jupiter', version: etf_junitTestVersion
 }
 
 configurations {
@@ -138,6 +141,10 @@ sourceSets {
 
 test {
 	dependsOn = ["testClasses", "compileTestJava", "deployTestDriverForIntegrationTesting"]
+	useJUnitPlatform()
+	testLogging {
+		events "passed", "skipped", "failed"
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
