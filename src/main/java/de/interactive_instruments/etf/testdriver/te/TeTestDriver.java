@@ -68,6 +68,7 @@ public class TeTestDriver extends AbstractTestDriver {
     // timeout in seconds
     public static final String TE_TIMEOUT_SEC = "etf.testdrivers.teamengine.timeout";
     public static final String TE_REMOTE_DEFAULT_URL = "http://cite.opengeospatial.org/teamengine";
+    public static final String TE_REMOTE_VERSION = "1.36";
     private DataStorage dataStorageCallback;
     private Credentials credentials;
     private static final String supportedTeamEngineVersion = CLUtils.getManifestAttributeValue(TeTestDriver.class,

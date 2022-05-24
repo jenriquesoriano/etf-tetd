@@ -20,6 +20,7 @@
  */
 package de.interactive_instruments.etf.testdriver.te;
 
+import static de.interactive_instruments.etf.testdriver.te.TeTestDriver.TE_REMOTE_VERSION;
 import static de.interactive_instruments.etf.testdriver.te.Types.*;
 import static org.w3c.dom.Node.ELEMENT_NODE;
 
@@ -265,11 +266,12 @@ class TeTypeLoader implements ExecutableTestSuiteLoader {
                 ets.setLabel(label);
                 ets.setReference(etsUrlStr);
                 ets.setRemoteResource(URI.create(etsUrlStr));
-                // The ETS ID is generated from the URL without the version
                 try {
-                    ets.setVersionFromStr(UriUtils.lastSegment(etsUrlStr));
+                    // The ETS ID is generated from the URL without the version
                     final String etsUrlWithoutVersion = UriUtils.getParent(etsUrlStr);
                     ets.setId(EidFactory.getDefault().createUUID(etsUrlWithoutVersion));
+                    ets.setVersionFromStr(configProperties.getPropertyOrDefault(
+                        TE_REMOTE_VERSION, "0.0.1"));
                 } catch (IllegalArgumentException e) {
                     ets.setVersionFromStr("0.0.1");
                     ets.setId(EidFactory.getDefault().createUUID(etsUrlStr));
