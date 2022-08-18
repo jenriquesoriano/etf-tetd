@@ -58,7 +58,7 @@ dependencies {
 	api group: 'org.slf4j', name: 'slf4j-api', version: etf_slf4jApiVersion
 
 	// https://mvnrepository.com/artifact/org.jsoup/jsoup
-	compile group: 'org.jsoup', name: 'jsoup', version: '1.10.2'
+	compile group: 'org.jsoup', name: 'jsoup', version: '1.14.2'
 
 	integrationTest group: 'org.slf4j', name: 'slf4j-simple', version: etf_slf4jApiVersion
 	integrationTest group: 'de.interactive_instruments.etf', name: 'etf-spi', version:'2.1.0'+project.snapshotSuffix
