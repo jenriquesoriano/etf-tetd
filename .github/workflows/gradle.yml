@@ -25,3 +25,4 @@ jobs:
         with:
           draft: true
           files: build/libs/etf-tetd-*.jar
+
