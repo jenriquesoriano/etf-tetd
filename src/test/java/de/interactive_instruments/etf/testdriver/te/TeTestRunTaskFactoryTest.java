@@ -1,5 +1,5 @@
 /**
- * Copyright 2017-2020 European Union
+ * Copyright 2017-2022 European Union
  *
  * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by
  * the European Commission - subsequent versions of the EUPL (the "Licence");
@@ -22,12 +22,10 @@ package de.interactive_instruments.etf.testdriver.te;
 
 import static de.interactive_instruments.etf.dal.dto.result.TestResultStatus.INTERNAL_ERROR;
 import static de.interactive_instruments.etf.testdriver.te.TeTestDriver.TE_TEST_DRIVER_EID;
-import static de.interactive_instruments.etf.testdriver.te.TeTestDriver.TE_TIMEOUT_SEC;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -48,6 +46,7 @@ import de.interactive_instruments.SUtils;
 import de.interactive_instruments.XmlUtils;
 import de.interactive_instruments.etf.EtfConstants;
 import de.interactive_instruments.etf.component.ComponentNotLoadedException;
+import de.interactive_instruments.etf.component.loaders.*;
 import de.interactive_instruments.etf.dal.dao.DataStorage;
 import de.interactive_instruments.etf.dal.dao.DataStorageRegistry;
 import de.interactive_instruments.etf.dal.dao.WriteDao;
@@ -61,6 +60,7 @@ import de.interactive_instruments.etf.dal.dto.test.ExecutableTestSuiteDto;
 import de.interactive_instruments.etf.model.EID;
 import de.interactive_instruments.etf.model.EidFactory;
 import de.interactive_instruments.etf.test.DataStorageTestUtils;
+import de.interactive_instruments.etf.test.InMemoryTestResultCollector;
 import de.interactive_instruments.etf.testdriver.*;
 import de.interactive_instruments.exceptions.*;
 import de.interactive_instruments.exceptions.config.ConfigurationException;
@@ -79,10 +79,13 @@ public class TeTestRunTaskFactoryTest {
     private static TestDriverManager testDriverManager = null;
     private static DataStorage DATA_STORAGE = DataStorageTestUtils.inMemoryStorage();
 
-    private final static String VERSION = "1.26";
     private final static String LABEL = "WFS 2.0 (OGC 09-025r2/ISO 19142) Conformance Test Suite";
-    private final static EID wfs20EtsId = EidFactory.getDefault().createUUID(
-            "http://cite.opengeospatial.org/teamengine/rest/suites/wfs20/");
+
+    // current ID (does not respect version information)
+    private final static EID wfs20EtsId = EidFactory.getDefault().createAndPreserveStr("18d66578-6ad6-3d3d-a090-0cf885c61de1");
+
+    // the version information is not available anymore
+    private final static String VERSION = "0.0.1";
 
     private static WriteDao<ExecutableTestSuiteDto> etsDao() {
         return ((WriteDao) DATA_STORAGE.getDao(ExecutableTestSuiteDto.class));
@@ -133,6 +136,21 @@ public class TeTestRunTaskFactoryTest {
         return testRunDto;
     }
 
+    private static class TestLoadingContext implements LoadingContext {
+
+        private final ItemRegistry itemRegistry = new DefaultItemRegistry();
+
+        @Override
+        public ItemRegistry getItemRegistry() {
+            return itemRegistry;
+        }
+
+        @Override
+        public ItemFileObserverRegistry getItemFileObserverRegistry() {
+            return NullItemFileObserverRegistry.instance();
+        }
+    }
+
     @BeforeAll
     public static void setUp()
             throws IOException, ConfigurationException, InvalidStateTransitionException,
@@ -174,11 +192,27 @@ public class TeTestRunTaskFactoryTest {
             testDriverManager.getConfigurationProperties().setProperty(
                     EtfConstants.ETF_DATA_STORAGE_NAME,
                     DATA_STORAGE.getClass().getName());
-
+            testDriverManager.setLoadingContext(new TestLoadingContext());
             testDriverManager.init();
             testDriverManager.load(EidFactory.getDefault().createAndPreserveStr(TE_TEST_DRIVER_EID));
         }
 
+    }
+
+    private static class InMemoryResultCollectorTestFactory implements TestResultCollectorFactory {
+
+        private InMemoryTestResultCollector collector = null;
+
+        public InMemoryResultCollectorTestFactory() {}
+
+        public TestResultCollector createTestResultCollector(TestRunLogger logger, TestTaskDto testTaskDto) {
+            collector = new InMemoryTestResultCollector(DataStorageTestUtils.inMemoryStorage(), logger, testTaskDto);
+            return collector;
+        }
+
+        public InMemoryTestResultCollector getCollector() {
+            return collector;
+        }
     }
 
     @Test
@@ -187,7 +221,7 @@ public class TeTestRunTaskFactoryTest {
 
         final ExecutableTestSuiteDto ets = etsDao().getById(wfs20EtsId).getDto();
         assertEquals(LABEL, ets.getLabel());
-        assertEquals(VERSION + ".0", ets.getVersionAsStr());
+        assertEquals(VERSION, ets.getVersionAsStr());
         // Clean non-initialized ETS
         assertEquals(0, ets.getLowestLevelItemSize());
     }
@@ -202,20 +236,21 @@ public class TeTestRunTaskFactoryTest {
         final DocumentBuilder builder = domFactory.newDocumentBuilder();
         final Document result = builder.parse(file);
 
-        final String testUrl = "https://services.interactive-instruments.de/cite-xs-46/simpledemo/cgi-bin/cities-postgresql/wfs?request=GetCapabilities&service=wfs";
+        final String testUrl = "https://services.interactive-instruments.de/ogc-reference-2/simple/wfs?request=GetCapabilities&service=wfs";
         final TestRunDto testRunDto = createTestRunDtoForProject(testUrl);
         final TestRun testRun = testDriverManager.createTestRun(testRunDto);
+        testRun.init();
+        testRun.start();
+        assertNotNull(testRun.getTestTasks());
+        assertNotNull(testRun.getTestTasks().get(0));
         final TestTask task = testRun.getTestTasks().get(0);
-
-        final Method method = task.getClass().getDeclaredMethod("parseTestNgResult", Document.class);
-        method.setAccessible(true);
-        method.invoke(task, result);
+        assertNotEquals(task.getResult().getResultStatus(), INTERNAL_ERROR);
     }
 
     @Test
     public void T3_runTest() throws Exception, ComponentNotLoadedException {
 
-        final String testUrl = "https://services.interactive-instruments.de/cite-xs-46/simpledemo/cgi-bin/cities-postgresql/wfs?request=GetCapabilities&service=wfs";
+        final String testUrl = "https://services.interactive-instruments.de/ogc-reference-2/simple/wfs?request=GetCapabilities&service=wfs";
         TestRunDto testRunDto = createTestRunDtoForProject(testUrl);
 
         final TestRun testRun = testDriverManager.createTestRun(testRunDto);
@@ -247,37 +282,6 @@ public class TeTestRunTaskFactoryTest {
         assertTrue(result.getErrorMessage().contains("OGC TEAM Engine returned HTTP status code"));
         // Todo not working with inmemory resultcollector
         // assertEquals(2, result.getAttachments().size());
-        assertTrue(result.getTestModuleResults() == null || result.getTestModuleResults().isEmpty());
-    }
-
-    // @Test(timeout = 90)
-    @Test
-    public void T5_timeoutTest() throws Exception, ComponentNotLoadedException {
-
-        final String testUrl = "https://services.interactive-instruments.de/cite-xs-46/simpledemo/cgi-bin/cities-postgresql/wfs?request=GetCapabilities&service=wfs";
-        final TestRunDto testRunDto = createTestRunDtoForProject(testUrl);
-
-        final String timeout = "10";
-
-        testDriverManager.release();
-        testDriverManager.getConfigurationProperties().setProperty(TE_TIMEOUT_SEC, timeout);
-        assertEquals(timeout, testDriverManager.getConfigurationProperties().getProperty(TE_TIMEOUT_SEC));
-        testDriverManager.init();
-        testDriverManager.load(EidFactory.getDefault().createAndPreserveStr(TE_TEST_DRIVER_EID));
-
-        final TestRun testRun = testDriverManager.createTestRun(testRunDto);
-        final TaskPoolRegistry<TestRunDto, TestRun> taskPoolRegistry = new TaskPoolRegistry<>(1, 1);
-        testRun.init();
-        taskPoolRegistry.submitTask(testRun);
-
-        final TestRunDto runResult = taskPoolRegistry.getTaskById(testRunDto.getId()).waitForResult();
-        assertNotNull(runResult);
-        final TestTaskResultDto result = runResult.getTestTasks().get(0).getTestTaskResult();
-        assertEquals(INTERNAL_ERROR, result.getResultStatus());
-        assertFalse(SUtils.isNullOrEmpty(result.getErrorMessage()));
-        assertTrue(
-                result.getErrorMessage().contains("OGC TEAM Engine is taking too long to respond. Timeout after " + timeout));
-        assertEquals(1, result.getAttachments().size());
         assertTrue(result.getTestModuleResults() == null || result.getTestModuleResults().isEmpty());
     }
 

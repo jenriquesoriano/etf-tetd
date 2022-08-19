@@ -1,5 +1,5 @@
 /**
- * Copyright 2017-2020 European Union
+ * Copyright 2017-2022 European Union
  *
  * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by
  * the European Commission - subsequent versions of the EUPL (the "Licence");
@@ -30,6 +30,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -54,6 +55,7 @@ import de.interactive_instruments.etf.testdriver.ExecutableTestSuiteUnavailable;
 import de.interactive_instruments.etf.testdriver.TestResultCollector;
 import de.interactive_instruments.exceptions.*;
 import de.interactive_instruments.exceptions.config.ConfigurationException;
+import de.interactive_instruments.io.PConn;
 
 /**
  * TEAM Engine test run task for executing test remotly on the OGC TEAM Engine.
@@ -121,7 +123,10 @@ class TeTestTask extends AbstractTestTask {
         final Document result;
         try {
             // application/xml = TestNG
-            result = builder.parse(UriUtils.openStream(apiUri, credentials, timeout, "application/xml"));
+            final PConn connection = PConn.create(apiUri, credentials)
+                    .timeout(timeout, TimeUnit.MILLISECONDS)
+                    .setAcceptHeader(Collections.singleton("application/xml"));
+            result = builder.parse(connection.openStream());
         } catch (UriUtils.ConnectionException e) {
             getLogger().info("OGC TEAM Engine returned an error.");
 

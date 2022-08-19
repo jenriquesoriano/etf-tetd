@@ -1,5 +1,5 @@
 /**
- * Copyright 2017-2020 European Union
+ * Copyright 2017-2022 European Union
  *
  * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by
  * the European Commission - subsequent versions of the EUPL (the "Licence");
@@ -271,7 +271,7 @@ class TeTypeLoader implements ExecutableTestSuiteLoader {
                     final String etsUrlWithoutVersion = UriUtils.getParent(etsUrlStr);
                     ets.setId(EidFactory.getDefault().createUUID(etsUrlWithoutVersion));
                     ets.setVersionFromStr(configProperties.getPropertyOrDefault(
-                        TE_REMOTE_VERSION, "0.0.1"));
+                            TE_REMOTE_VERSION, "0.0.1"));
                 } catch (IllegalArgumentException e) {
                     ets.setVersionFromStr("0.0.1");
                     ets.setId(EidFactory.getDefault().createUUID(etsUrlStr));
