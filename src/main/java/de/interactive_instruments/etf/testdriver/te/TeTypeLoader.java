@@ -248,10 +248,13 @@ class TeTypeLoader implements EtsTypeLoader {
 
 		try {
 			// Get list of Executable Test Suites
-			final String etsOverview = Jsoup.connect(suitesUri.toURL().toString())
+			/* final String etsOverview = Jsoup.connect(suitesUri.toURL().toString())
                     .header("Accept", "application/xhtml+xml")
                     .header("Authorization", credentials.toBasicAuth())
-                    .get().toString();
+                    .get().toString();*/
+			//Test 1
+			final String etsOverview = UriUtils.loadAsString(suitesUri, credentials);
+			
 			final Document etsOverviewDoc = Jsoup.parse(etsOverview);
 			final Elements etsUrls = etsOverviewDoc.select("body ul li a[href]");
 			for (final Element etsUrl : etsUrls) {
