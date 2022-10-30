@@ -1,7 +1,6 @@
 # ETF Test Driver for running running TEAM-Engine-based test projects
 
-The test driver is loaded by the ETF framework at runtime. The test driver
-executes TEAM-Engine-based test projects on a remote TEAM Engine instance, for example, the OGC CITE tests.
+The test driver is loaded by the ETF framework at runtime. The test driver executes TEAM-Engine-based test projects on a remote TEAM Engine instance, for example, the OGC CITE tests.
 
 [![European Union Public Licence 1.2](https://img.shields.io/badge/license-EUPL%201.2-blue.svg)](https://joinup.ec.europa.eu/software/page/eupl)
 
